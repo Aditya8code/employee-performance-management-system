@@ -1,0 +1,121 @@
+# ==============================================================================
+# .gitignore for Employee Performance Management System (EPS)
+# Covers: Java, Maven, Apache Tomcat, IDEs (IntelliJ, Eclipse, VS Code),
+#         Database Credentials & Sensitive Environment Files, OS Files
+# ==============================================================================
+
+# ------------------------------------------------------------------------------
+# 1. Database Credentials & Sensitive Configuration
+# ------------------------------------------------------------------------------
+# Ignore active database connection properties and credentials
+db.properties
+src/main/resources/db.properties
+database.properties
+credentials.properties
+secrets.properties
+
+# Keep example configuration files tracked for developers
+!db.properties.example
+!src/main/resources/db.properties.example
+
+# Environment and Secret files
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+
+# ------------------------------------------------------------------------------
+# 2. Java Compiled Files & Packaging
+# ------------------------------------------------------------------------------
+*.class
+*.war
+*.ear
+*.nar
+*.jar
+!mvnw
+!*.mvn/wrapper/*.jar
+
+# JVM Crash logs
+hs_err_pid*
+replay_pid*
+
+# ------------------------------------------------------------------------------
+# 3. Maven Build Output
+# ------------------------------------------------------------------------------
+target/
+pom.xml.tag
+pom.xml.releaseBackup
+pom.xml.versionsBackup
+pom.xml.next
+release.properties
+dependency-reduced-pom.xml
+buildNumber.properties
+.mvn/timing.properties
+
+# ------------------------------------------------------------------------------
+# 4. Apache Tomcat & Application Server
+# ------------------------------------------------------------------------------
+# Local Tomcat binary installation and server runtime directories
+tomcat/
+apache-tomcat-*/
+work/
+temp/
+logs/
+catalina.out
+*.log
+
+# ------------------------------------------------------------------------------
+# 5. IDE & Editor Artifacts
+# ------------------------------------------------------------------------------
+# IntelliJ IDEA
+.idea/
+*.iml
+*.iws
+*.ipr
+out/
+
+# Eclipse
+.project
+.classpath
+.settings/
+.metadata/
+bin/
+tmp/
+*.tmp
+*.bak
+*.swp
+
+# Visual Studio Code
+.vscode/
+*.code-workspace
+
+# NetBeans
+/nbproject/private/
+/nbbuild/
+/dist/
+
+# ------------------------------------------------------------------------------
+# 6. Python (Verification & Test Automation)
+# ------------------------------------------------------------------------------
+__pycache__/
+*.py[cod]
+*$py.class
+.pytest_cache/
+venv/
+.venv/
+
+# ------------------------------------------------------------------------------
+# 7. Operating System Metadata
+# ------------------------------------------------------------------------------
+# macOS
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+
+# Windows
+Thumbs.db
+ehthumbs.db
+[Dd]esktop.ini

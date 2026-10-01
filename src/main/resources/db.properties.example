@@ -1,0 +1,18 @@
+# Database Configuration for Employee Performance Management System
+# MySQL 8 Configuration (Default)
+db.driver=com.mysql.cj.jdbc.Driver
+db.url=jdbc:mysql://localhost:3306/eps_db?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC&characterEncoding=UTF-8
+db.username=root
+db.password=root
+
+# Connection Pool Settings
+db.pool.initialSize=5
+db.pool.maxTotal=20
+db.pool.maxIdle=10
+db.pool.minIdle=2
+db.pool.maxWaitMillis=10000
+
+# Zero-Setup Automatic Fallback
+# When true, if local MySQL 8 server is unreachable, the system automatically falls back
+# to an embedded database with MySQL compatibility mode and auto-executes schema.sql and sample-data.sql.
+db.auto_fallback=true
