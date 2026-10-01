@@ -81,10 +81,11 @@ public class AuthController extends HttpServlet {
                 }
             }
 
-            if (redirect != null && !redirect.trim().isEmpty() && redirect.startsWith(request.getContextPath())) {
+            String ctx = request.getContextPath();
+            if (redirect != null && !redirect.trim().isEmpty() && redirect.startsWith("/") && (ctx.isEmpty() || redirect.startsWith(ctx))) {
                 response.sendRedirect(redirect);
             } else {
-                response.sendRedirect(request.getContextPath() + user.getDefaultDashboardUrl());
+                response.sendRedirect(ctx + user.getDefaultDashboardUrl());
             }
 
         } catch (AuthenticationException ae) {

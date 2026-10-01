@@ -61,19 +61,92 @@ public class DBConnectionManager {
             LOGGER.log(Level.WARNING, "db.properties not found on classpath, using defaults", e);
         }
 
-        this.driver = props.getProperty("db.driver", "com.mysql.cj.jdbc.Driver");
-        this.url = props.getProperty("db.url", "jdbc:mysql://localhost:3306/eps_db?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC&characterEncoding=UTF-8");
-        this.username = props.getProperty("db.username", "root");
-        this.password = props.getProperty("db.password", "root");
-        this.autoFallback = Boolean.parseBoolean(props.getProperty("db.auto_fallback", "true"));
+        // Priority 1: Check standard Railway / Cloud environment variables
+        // DB_HOST, DB_PORT, DB_NAME, DB_USER, DB_PASSWORD
+        // Also support Railway default aliases: MYSQLHOST, MYSQLPORT, MYSQLDATABASE, MYSQLUSER, MYSQLPASSWORD, MYSQL_URL
+        String envHost = getEnvOrNull("DB_HOST", "MYSQLHOST");
+        String envPort = getEnvOrNull("DB_PORT", "MYSQLPORT");
+        String envDbName = getEnvOrNull("DB_NAME", "MYSQLDATABASE");
+        String envUser = getEnvOrNull("DB_USER", "MYSQLUSER");
+        String envPassword = getEnvOrNull("DB_PASSWORD", "MYSQLPASSWORD");
+        String envDatabaseUrl = getEnvOrNull("DATABASE_URL", "MYSQL_URL");
+
+        if (envDatabaseUrl != null && !envDatabaseUrl.trim().isEmpty()) {
+            parseDatabaseUrl(envDatabaseUrl.trim());
+        } else if (envHost != null && !envHost.trim().isEmpty()) {
+            String port = (envPort != null && !envPort.trim().isEmpty()) ? envPort.trim() : "3306";
+            String dbName = (envDbName != null && !envDbName.trim().isEmpty()) ? envDbName.trim() : "eps_db";
+            this.driver = "com.mysql.cj.jdbc.Driver";
+            this.url = "jdbc:mysql://" + envHost.trim() + ":" + port + "/" + dbName + "?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC&characterEncoding=UTF-8";
+            this.username = (envUser != null) ? envUser.trim() : "root";
+            this.password = (envPassword != null) ? envPassword : "";
+            LOGGER.info("Configured database connection from environment variables: host=" + envHost + ", port=" + port + ", db=" + dbName);
+        } else {
+            // Priority 2: Fall back to db.properties / local defaults
+            this.driver = props.getProperty("db.driver", "com.mysql.cj.jdbc.Driver");
+            this.url = props.getProperty("db.url", "jdbc:mysql://localhost:3306/eps_db?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC&characterEncoding=UTF-8");
+            this.username = props.getProperty("db.username", "root");
+            this.password = props.getProperty("db.password", "root");
+        }
+
+        String autoFallbackEnv = getEnvOrNull("DB_AUTO_FALLBACK");
+        if (autoFallbackEnv != null) {
+            this.autoFallback = Boolean.parseBoolean(autoFallbackEnv.trim());
+        } else {
+            this.autoFallback = Boolean.parseBoolean(props.getProperty("db.auto_fallback", "true"));
+        }
+    }
+
+    private void parseDatabaseUrl(String dbUrl) {
+        try {
+            if (dbUrl.startsWith("jdbc:")) {
+                this.driver = "com.mysql.cj.jdbc.Driver";
+                this.url = dbUrl;
+                return;
+            }
+            java.net.URI uri = new java.net.URI(dbUrl);
+            String userInfo = uri.getUserInfo();
+            if (userInfo != null && userInfo.contains(":")) {
+                String[] parts = userInfo.split(":", 2);
+                this.username = parts[0];
+                this.password = parts[1];
+            } else if (userInfo != null) {
+                this.username = userInfo;
+                this.password = "";
+            }
+            String host = uri.getHost();
+            int port = uri.getPort() > 0 ? uri.getPort() : 3306;
+            String path = uri.getPath();
+            String dbName = (path != null && path.length() > 1) ? path.substring(1) : "eps_db";
+            this.driver = "com.mysql.cj.jdbc.Driver";
+            this.url = "jdbc:mysql://" + host + ":" + port + "/" + dbName + "?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC&characterEncoding=UTF-8";
+            LOGGER.info("Parsed DATABASE_URL for host=" + host + ", port=" + port + ", db=" + dbName);
+        } catch (Exception e) {
+            LOGGER.log(Level.WARNING, "Failed to parse DATABASE_URL: " + e.getMessage());
+        }
+    }
+
+    private String getEnvOrNull(String... keys) {
+        for (String key : keys) {
+            String val = System.getenv(key);
+            if (val != null && !val.trim().isEmpty()) {
+                return val.trim();
+            }
+            val = System.getProperty(key);
+            if (val != null && !val.trim().isEmpty()) {
+                return val.trim();
+            }
+        }
+        return null;
     }
 
     private void testOrInitialize() {
         try {
             Class.forName(driver);
             try (Connection conn = DriverManager.getConnection(url, username, password)) {
-                LOGGER.info("Successfully connected to primary database: " + url);
+                LOGGER.info("Successfully connected to primary database: " + url.replaceAll("password=([^&]+)", "password=***"));
                 isFallbackActive = false;
+                ensureTablesExist(conn);
                 return;
             }
         } catch (Exception ex) {
@@ -84,6 +157,20 @@ public class DBConnectionManager {
             } else {
                 throw new DatabaseException("Cannot connect to primary database and fallback is disabled", ex);
             }
+        }
+    }
+
+    private void ensureTablesExist(Connection conn) {
+        try (Statement stmt = conn.createStatement();
+             ResultSet rs = stmt.executeQuery("SHOW TABLES LIKE 'users'")) {
+            if (!rs.next()) {
+                LOGGER.info("Primary database has no 'users' table. Automatically provisioning schema and sample data...");
+                executeSqlFile(conn, "database/schema.sql");
+                executeSqlFile(conn, "database/sample-data.sql");
+                LOGGER.info("Primary database schema and sample data provisioned successfully.");
+            }
+        } catch (Exception e) {
+            LOGGER.log(Level.FINE, "Notice during table check: " + e.getMessage());
         }
     }
 
@@ -144,10 +231,11 @@ public class DBConnectionManager {
                     if (trimmed.isEmpty() || trimmed.startsWith("//") || trimmed.startsWith("/*")) {
                         continue;
                     }
+                    // Skip database creation/switching statements when executing through active connection
+                    if (trimmed.toUpperCase().startsWith("CREATE DATABASE") || trimmed.toUpperCase().startsWith("USE ")) {
+                        continue;
+                    }
                     if (isFallbackActive) {
-                        if (trimmed.toUpperCase().startsWith("CREATE DATABASE") || trimmed.toUpperCase().startsWith("USE ")) {
-                            continue;
-                        }
                         if (trimmed.toUpperCase().startsWith("INDEX ") || trimmed.toUpperCase().startsWith("KEY ")) {
                             continue;
                         }

@@ -96,7 +96,7 @@ tmp/
 /dist/
 
 # ------------------------------------------------------------------------------
-# 6. Python (Verification & Test Automation)
+# 6. Python & Node.js Artifacts
 # ------------------------------------------------------------------------------
 __pycache__/
 *.py[cod]
@@ -104,6 +104,8 @@ __pycache__/
 .pytest_cache/
 venv/
 .venv/
+node_modules/
+package-lock.json
 
 # ------------------------------------------------------------------------------
 # 7. Operating System Metadata

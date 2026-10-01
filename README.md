@@ -284,6 +284,72 @@ To stop Tomcat:
 
 ---
 
+## ☁️ Production Railway Cloud Deployment Guide
+
+The project is fully pre-configured for automated container deployment on **[Railway](https://railway.app)** via Docker and multi-stage Maven packaging.
+
+### Key Deployment Highlights
+- **Multi-Stage Dockerfile**: Builds the WAR file with Maven 3.9 / Java 17 and runs on Apache Tomcat 10.1.
+- **Dynamic Port Binding**: Automatically maps Railway's dynamic `$PORT` environment variable to Tomcat's `server.xml` HTTP connector via `docker-entrypoint.sh`.
+- **Root Context Routing**: Deployed as `ROOT.war` so the application runs at the root public domain (`https://<your-app>.up.railway.app/`) with zero `/eps/` prefix required.
+- **Auto-Provisioning**: On first boot against a newly created Railway MySQL database, `DBConnectionManager` automatically executes `schema.sql` and `sample-data.sql` so all sample users and appraisals are available immediately.
+
+---
+
+### Step 1: Provision a MySQL Database on Railway
+1. Log in to [Railway](https://railway.app) and create a **New Project**.
+2. Click **+ New** $\to$ **Database** $\to$ **Add MySQL**.
+3. Railway will provision a managed MySQL 8 instance and expose connection variables.
+
+---
+
+### Step 2: Deploy the Application from GitHub
+1. In your Railway project canvas, click **+ New** $\to$ **GitHub Repo**.
+2. Select your repository (`EMPLOYEE PERFORMANCE MANAGEMENT SYSTEM`).
+3. Railway will detect the `Dockerfile` and `railway.json` automatically.
+
+---
+
+### Step 3: Link Environment Variables
+In your web service's **Variables** tab on Railway, link to your MySQL instance using Railway Reference Variables or explicit values:
+
+| Environment Variable | Railway Reference Value / Example | Description |
+| :--- | :--- | :--- |
+| `DB_HOST` | `${{MySQL.MYSQLHOST}}` | MySQL server host address |
+| `DB_PORT` | `${{MySQL.MYSQLPORT}}` | MySQL port (default 3306) |
+| `DB_NAME` | `${{MySQL.MYSQLDATABASE}}` | Database name |
+| `DB_USER` | `${{MySQL.MYSQLUSER}}` | Database username |
+| `DB_PASSWORD` | `${{MySQL.MYSQLPASSWORD}}` | Database password |
+
+*(Note: If you link Railway's MySQL service directly, the application will also automatically recognize Railway's native variables: `MYSQLHOST`, `MYSQLPORT`, `MYSQLDATABASE`, `MYSQLUSER`, `MYSQLPASSWORD`, and `MYSQL_URL`.)*
+
+---
+
+### Step 4: Generate a Public Domain
+1. In your web service on Railway, navigate to **Settings** $\to$ **Networking**.
+2. Click **Generate Domain** (e.g., `https://eps-enterprise-production.up.railway.app`).
+3. Open the public URL in your browser:
+   - Root URL `/` immediately redirects to `/auth/login`.
+   - Log in using any demo account (`admin` / `Admin@123`, `manager1` / `Manager@123`, `emp1` / `Employee@123`).
+
+---
+
+### Step 5: (Alternative) Deploy Using Railway CLI
+You can also deploy directly from your local terminal:
+```bash
+# Install Railway CLI
+npm i -g @railway/cli
+
+# Login and link project
+railway login
+railway link
+
+# Deploy current directory
+railway up
+```
+
+---
+
 ## 🧪 Testing the Application Flows
 
 1. **Test Admin Flow**:
@@ -303,3 +369,93 @@ To stop Tomcat:
    - Sign out and click **Employee (Alice)** demo button (`emp1` / `Employee@123`).
    - View your personal rating badge, score, and performance trend chart.
    - Click **View Details** to inspect the 6-axis **Competency Radar Chart** and supervisor feedback.
+
+---
+
+## 📸 Application Screenshots Gallery
+
+All screenshots are stored in [`docs/screenshots/`](docs/screenshots/) at high resolution (1440×960 retina):
+
+### 1. Login Page
+![Login Page](docs/screenshots/01-login-page.png)
+*Modern sign-in interface featuring BCrypt password hashing, session authentication, and one-click demo credentials fill.*
+
+### 2. Admin Dashboard
+![Admin Dashboard](docs/screenshots/02-admin-dashboard.png)
+*Executive overview displaying company headcount, active appraisal cycles, completed reviews, and overall average performance scores.*
+
+### 3. Employee Management Directory
+![Employee Management](docs/screenshots/03-employee-management.png)
+*Comprehensive employee directory with department assignment, reporting manager hierarchy, job titles, and CRUD actions.*
+
+### 4. Department Management
+![Department Management](docs/screenshots/04-department-management.png)
+*Organization departments listing with employee counts and safe deletion validation.*
+
+### 5. Evaluation Cycles Management
+![Evaluation Cycles](docs/screenshots/05-evaluation-cycle.png)
+*Appraisal period management tracking active, draft, and completed review cycles.*
+
+### 6. Manager Dashboard
+![Manager Dashboard](docs/screenshots/06-manager-dashboard.png)
+*Supervisor workspace showing direct reports, pending evaluation counts, and team appraisal status.*
+
+### 7. Employee Evaluation Form with Live Score Calculator
+![Evaluation Form](docs/screenshots/07-employee-evaluation-form.png)
+*Appraisal form featuring 1–5 scoring across all 6 core criteria, individual feedback, qualitative comments, and a real-time live score calculator with official rating badge updates.*
+
+### 8. Employee Self-Service Dashboard
+![Employee Dashboard](docs/screenshots/08-employee-dashboard.png)
+*Personal portal showing latest appraised performance score (4.85 Outstanding), supervisor remarks, and multi-cycle performance score trend line chart.*
+
+### 9. Employee Evaluation Breakdown & Competency Radar Chart
+![Evaluation Result](docs/screenshots/09-employee-evaluation-result.png)
+*Detailed appraisal breakdown featuring the 6-dimension Chart.js Competency Radar Chart, manager feedback highlights, and development goals.*
+
+### 10. Organization Performance Reports & Analytics
+![Reports and Analytics](docs/screenshots/10-reports-page.png)
+*Cross-departmental analytics with multi-parameter filtering, Department Average Comparison Bar Chart, Rating Band Doughnut Chart, and RFC-4180 CSV Export.*
+
+---
+
+## 📤 GitHub Upload Instructions
+
+Follow these step-by-step commands to push this project to a new GitHub repository:
+
+### Step 1: Initialize Git Repository
+```bash
+# Navigate to the project root directory
+cd "EMPLOYEE PERFORMANCE MANAGEMENT SYSTEM"
+
+# Initialize a new git repository
+git init
+```
+
+### Step 2: Stage and Commit the Code
+```bash
+# Verify .gitignore is in place (ignores target/, tomcat/, and credentials)
+git status
+
+# Stage all project files
+git add .
+
+# Create the initial commit
+git commit -m "feat: complete Employee Performance Management System (Java 17, Servlets, JSP, MySQL, Bootstrap 5, Chart.js)"
+```
+
+### Step 3: Link and Push to GitHub
+```bash
+# Set default branch to main
+git branch -M main
+
+# Add your GitHub repository remote URL (replace with your repo URL)
+git remote add origin https://github.com/<your-username>/<your-repo-name>.git
+
+# Push the codebase to GitHub
+git push -u origin main
+```
+
+*(Alternatively, if using the GitHub CLI `gh`:)*
+```bash
+gh repo create employee-performance-system --public --source=. --remote=origin --push
+```

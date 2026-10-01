@@ -1,5 +1,16 @@
 # Database Configuration for Employee Performance Management System
-# MySQL 8 Configuration (Default)
+# 
+# In Production (Railway / Cloud), configure environment variables:
+#   DB_HOST       (e.g., mysql.railway.internal or host from Railway)
+#   DB_PORT       (e.g., 3306)
+#   DB_NAME       (e.g., railway or eps_db)
+#   DB_USER       (e.g., root)
+#   DB_PASSWORD   (your secure database password)
+# 
+# Railway aliases MYSQLHOST, MYSQLPORT, MYSQLDATABASE, MYSQLUSER, MYSQLPASSWORD,
+# and DATABASE_URL / MYSQL_URL are also automatically supported!
+#
+# For Local Development, copy this file to src/main/resources/db.properties:
 db.driver=com.mysql.cj.jdbc.Driver
 db.url=jdbc:mysql://localhost:3306/eps_db?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC&characterEncoding=UTF-8
 db.username=root
@@ -13,6 +24,6 @@ db.pool.minIdle=2
 db.pool.maxWaitMillis=10000
 
 # Zero-Setup Automatic Fallback
-# When true, if local MySQL 8 server is unreachable, the system automatically falls back
+# When true, if MySQL 8 is unreachable, the system automatically falls back
 # to an embedded database with MySQL compatibility mode and auto-executes schema.sql and sample-data.sql.
 db.auto_fallback=true

@@ -1,0 +1,42 @@
+# ==============================================================================
+# .dockerignore for Employee Performance Management System (EPS)
+# Prevents unnecessary, binary, or sensitive files from Docker build context
+# ==============================================================================
+
+# Git & GitHub metadata
+.git/
+.github/
+
+# Maven local build artifacts
+target/
+pom.xml.tag
+release.properties
+
+# Local application server runtime
+tomcat/
+apache-tomcat-*/
+logs/
+temp/
+work/
+*.log
+catalina.out
+
+# Node.js and testing dependencies
+node_modules/
+package-lock.json
+capture_screenshots.js
+test_flows.py
+
+# Documentation screenshots
+docs/screenshots/
+
+# Sensitive database credentials (use environment variables in production)
+db.properties
+src/main/resources/db.properties
+
+# IDE & OS files
+.idea/
+*.iml
+.vscode/
+.DS_Store
+Thumbs.db
